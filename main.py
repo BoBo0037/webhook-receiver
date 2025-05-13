@@ -4,19 +4,25 @@
 
 # 本地使用:
 # 1. docker build -t webhook-receiver-image -f Dockerfile .
-# 2. docker run --rm -it -p 9999:9999 --name webhook-receiver-container webhook-receiver-image
-# 3. curl -X POST http://localhost:9999/receive -H "Content-Type: application/json" -d '{"key": "value"}'
+# 2. docker run --rm -it -p 8888:8888 --name webhook-receiver-container webhook-receiver-image
+# 3. curl -X POST http://localhost:8888/receive -H "Content-Type: application/json" -d '{"key": "value"}'
 
+import json
 from fastapi import FastAPI, Request
 app = FastAPI()
 
-@app.post("/receive")
+@app.post("/hostinstance/register")
 async def receive_webhook(request: Request):
-    body = await request.json()
-    print("receive message: ")
-    print(body)
-    return {"status": "success", "received_data": body}
+    try:
+        body = await request.json()
+        print(f"Received message: {body}")
+        return {"status": "success", "received_data": body}
+    except json.JSONDecodeError: 
+        return {"status": "error", "message": "Invalid JSON"}
+    except Exception as e: 
+        print(f"Unexpected error: {str(e)}") 
+        return {"status": "error", "message": "Internal server error"}
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=9999)
+    uvicorn.run(app, host="0.0.0.0", port=8888)
